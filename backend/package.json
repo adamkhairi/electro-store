@@ -1,0 +1,23 @@
+{
+  "name": "@electrostock/backend",
+  "version": "1.0.0",
+  "description": "ElectroStock Pro Backend API",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build": "bun build src/index.ts --outdir dist",
+    "start": "bun run dist/index.js",
+    "test": "bun test",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts"
+  },
+  "dependencies": {
+    "@electrostock/types": "workspace:*",
+    "@electrostock/utils": "workspace:*",
+    "@electrostock/constants": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.3.0"
+  }
+}

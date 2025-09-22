@@ -1,0 +1,72 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Frontend",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173,
+      "serverReadyAction": {
+        "pattern": "Local:   http://localhost:([0-9]+)",
+        "uriFormat": "http://localhost:%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Debug Backend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/src/index.ts",
+      "cwd": "${workspaceFolder}/backend",
+      "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"],
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "*"
+      },
+      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "console": "integratedTerminal",
+      "restart": true,
+      "protocol": "inspector"
+    },
+    {
+      "name": "Debug Backend Tests",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:debug"],
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
+      "name": "Debug Frontend Tests",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:debug"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Attach to Backend",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/backend",
+      "remoteRoot": "/app",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": ["Debug Frontend", "Debug Backend"]
+    }
+  ]
+}
