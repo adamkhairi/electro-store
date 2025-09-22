@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: electrostock-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: electrostock_pro
+      POSTGRES_USER: electrostock
+      POSTGRES_PASSWORD: development_password_2024
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - electrostock-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: electrostock-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - electrostock-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  electrostock-network:
+    driver: bridge

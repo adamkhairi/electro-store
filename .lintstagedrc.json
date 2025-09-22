@@ -1,6 +1,5 @@
 {
-  "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"],
-  "*.{json,md,yaml,yml}": ["prettier --write"],
-  "*.{css,scss,less}": ["stylelint --fix", "prettier --write"],
-  "package.json": ["sort-package-json"]
+  "**/*.{json,md,yaml,yml}": ["prettier --write"],
+  "frontend/**/*.{js,jsx,ts,tsx}": ["prettier --write"],
+  "backend/**/*.{js,ts}": ["prettier --write"]
 }
