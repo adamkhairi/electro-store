@@ -2,6 +2,7 @@
 export interface Product {
   id: string;
   sku: string;
+  barcode?: string;
   name: string;
   description?: string;
   shortDescription?: string;
@@ -108,7 +109,8 @@ export enum ProductStatus {
 
 // Product Request/Response Types
 export interface CreateProductRequest {
-  sku: string;
+  sku?: string;
+  barcode?: string;
   name: string;
   description?: string;
   shortDescription?: string;
@@ -141,6 +143,8 @@ export interface ProductListRequest {
   page?: number;
   limit?: number;
   search?: string;
+  sku?: string;
+  barcode?: string;
   categoryId?: string;
   status?: ProductStatus;
   brand?: string;
@@ -168,4 +172,66 @@ export interface CreateCategoryRequest {
 
 export interface UpdateCategoryRequest extends Partial<CreateCategoryRequest> {
   id: string;
+}
+
+export interface CategoryListRequest {
+  page?: number;
+  limit?: number;
+  search?: string;
+  parentId?: string;
+  includeInactive?: boolean;
+  sortBy?: 'name' | 'sortOrder' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface CategoryListResponse {
+  categories: Category[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CategoryTreeNode extends Category {
+  children: CategoryTreeNode[];
+  productCount?: number;
+}
+
+// SKU Generation Types
+export interface SkuGenerationRequest {
+  productName: string;
+  brand?: string;
+  categoryId?: string;
+  customPrefix?: string;
+}
+
+export interface SkuGenerationResponse {
+  sku: string;
+  pattern: string;
+}
+
+// Barcode Types
+export interface BarcodeValidationRequest {
+  barcode: string;
+  type?: BarcodeType;
+}
+
+export interface BarcodeValidationResponse {
+  isValid: boolean;
+  type?: BarcodeType;
+  checksum?: boolean;
+  message?: string;
+}
+
+export enum BarcodeType {
+  UPC_A = 'UPC-A',
+  UPC_E = 'UPC-E',
+  EAN_13 = 'EAN-13',
+  EAN_8 = 'EAN-8',
+  CODE_128 = 'CODE-128',
+  CODE_39 = 'CODE-39',
+  ITF = 'ITF',
+  MSI = 'MSI',
 }

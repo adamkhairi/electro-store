@@ -10,9 +10,10 @@ const prisma = new PrismaClient({
   log: config.nodeEnv === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
 });
 
-// Handle Prisma connection events
-prisma.$on('beforeExit', async () => {
+// Handle graceful shutdown
+process.on('beforeExit', async () => {
   console.log('🔌 Disconnecting from database...');
+  await prisma.$disconnect();
 });
 
 // Test database connection

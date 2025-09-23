@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import authRoutes from './routes/auth';
+import categoryRoutes from './routes/categories';
 import customerRoutes from './routes/customers';
 import inventoryRoutes from './routes/inventory';
 import orderRoutes from './routes/orders';
@@ -56,6 +57,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authenticateJWT, userRoutes);
 app.use('/api/products', authenticateJWT, productRoutes);
+app.use('/api/categories', authenticateJWT, categoryRoutes);
 app.use('/api/inventory', authenticateJWT, inventoryRoutes);
 app.use('/api/orders', authenticateJWT, orderRoutes);
 app.use('/api/customers', authenticateJWT, customerRoutes);

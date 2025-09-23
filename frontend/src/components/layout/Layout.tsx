@@ -5,6 +5,7 @@ import {
   CogIcon,
   CubeIcon,
   DocumentTextIcon,
+  FolderIcon,
   HomeIcon,
   UsersIcon,
   XMarkIcon,
@@ -18,6 +19,7 @@ import { logout } from '../../store/slices/authSlice';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Products', href: '/products', icon: CubeIcon },
+  { name: 'Categories', href: '/categories', icon: FolderIcon },
   { name: 'Inventory', href: '/inventory', icon: BuildingStorefrontIcon },
   { name: 'Orders', href: '/orders', icon: DocumentTextIcon },
   { name: 'Customers', href: '/customers', icon: UsersIcon },
@@ -26,6 +28,13 @@ const navigation = [
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
+}
+
+function isActiveRoute(currentPath: string, itemHref: string): boolean {
+  if (itemHref === '/dashboard') {
+    return currentPath === '/dashboard' || currentPath === '/';
+  }
+  return currentPath.startsWith(itemHref);
 }
 
 export default function Layout() {
@@ -80,7 +89,7 @@ export default function Layout() {
                 to={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={classNames(
-                  location.pathname === item.href
+                  isActiveRoute(location.pathname, item.href)
                     ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                   'group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors duration-150'
@@ -132,7 +141,7 @@ export default function Layout() {
                   key={item.name}
                   to={item.href}
                   className={classNames(
-                    location.pathname === item.href
+                    isActiveRoute(location.pathname, item.href)
                       ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                     'group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors duration-150'

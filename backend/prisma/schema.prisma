@@ -117,6 +117,7 @@ model Location {
 model Product {
   id              String   @id @default(cuid())
   sku             String   @unique
+  barcode         String?  @unique
   name            String
   description     String?
   shortDescription String?
@@ -175,6 +176,7 @@ model Product {
   @@index([tenantId])
   @@index([categoryId])
   @@index([sku])
+  @@index([barcode])
   @@index([status])
 }
 
@@ -259,11 +261,13 @@ model Inventory {
 // Stock movement tracking
 model StockMovement {
   id          String   @id @default(cuid())
-  type        String   // in, out, adjustment, transfer
+  type        String   // purchase, sale, adjustment, transfer_in, transfer_out, return, damaged, expired
   quantity    Int
   reason      String?
   reference   String?  // PO number, order number, etc.
   notes       String?
+  beforeQuantity Int?  // Quantity before the movement
+  afterQuantity  Int?  // Quantity after the movement
   createdAt   DateTime @default(now())
 
   // Relationships

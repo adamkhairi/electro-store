@@ -5,8 +5,16 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-d
 import './App.css';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
+import CategoriesPage from './pages/categories';
 import DashboardPage from './pages/DashboardPage';
+import InventoryDashboard from './pages/inventory/InventoryDashboard';
+import InventoryMovementsPage from './pages/inventory/InventoryMovementsPage';
+import StockAdjustmentPage from './pages/inventory/StockAdjustmentPage';
 import LoginPage from './pages/LoginPage';
+import ProductsPage from './pages/products';
+import CreateProductPage from './pages/products/CreateProductPage';
+import EditProductPage from './pages/products/EditProductPage';
+import ProductDetailPage from './pages/products/ProductDetailPage';
 import { store } from './store';
 import { useAppDispatch } from './store/hooks';
 import { initializeAuth } from './store/slices/authSlice';
@@ -47,8 +55,23 @@ function AppContent(): JSX.Element {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="products" element={<div>Products Page (Coming Soon)</div>} />
-          <Route path="inventory" element={<div>Inventory Page (Coming Soon)</div>} />
+
+          {/* Product Routes */}
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="products/new" element={<CreateProductPage />} />
+          <Route path="products/:id" element={<ProductDetailPage />} />
+          <Route path="products/:id/edit" element={<EditProductPage />} />
+
+          {/* Category Routes */}
+          <Route path="categories" element={<CategoriesPage />} />
+
+          {/* Inventory Routes */}
+          <Route path="inventory" element={<InventoryDashboard />} />
+          <Route path="inventory/adjust" element={<StockAdjustmentPage />} />
+          <Route path="inventory/transfer" element={<StockAdjustmentPage />} />
+          <Route path="inventory/movements" element={<InventoryMovementsPage />} />
+
+          {/* Other Routes */}
           <Route path="orders" element={<div>Orders Page (Coming Soon)</div>} />
           <Route path="customers" element={<div>Customers Page (Coming Soon)</div>} />
           <Route path="settings" element={<div>Settings Page (Coming Soon)</div>} />

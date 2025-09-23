@@ -113,6 +113,37 @@ export const productAPI = {
     api.put(`/products/${id}`, data),
 
   deleteProduct: (id: string): Promise<AxiosResponse<ApiResponse>> => api.delete(`/products/${id}`),
+
+  getProductStats: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/products/stats'),
+
+  generateSku: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post('/products/generate-sku', data),
+
+  validateBarcode: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post('/products/validate-barcode', data),
+};
+
+// Category API endpoints
+export const categoryAPI = {
+  getCategories: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/categories', { params }),
+
+  getCategory: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get(`/categories/${id}`),
+
+  createCategory: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post('/categories', data),
+
+  updateCategory: (id: string, data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.put(`/categories/${id}`, data),
+
+  deleteCategory: (id: string): Promise<AxiosResponse<ApiResponse>> =>
+    api.delete(`/categories/${id}`),
+
+  getCategoryTree: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/categories/tree'),
+
+  reorderCategories: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post('/categories/reorder', data),
 };
 
 // Inventory API endpoints

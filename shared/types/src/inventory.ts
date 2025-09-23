@@ -38,6 +38,8 @@ export interface StockMovement {
   reason?: string;
   reference?: string;
   notes?: string;
+  beforeQuantity?: number;
+  afterQuantity?: number;
   inventoryId: string;
   userId?: string;
   createdAt: Date;
@@ -61,17 +63,22 @@ export interface Location {
 }
 
 export enum StockMovementType {
-  IN = 'in',
-  OUT = 'out',
+  PURCHASE = 'purchase',
+  SALE = 'sale',
   ADJUSTMENT = 'adjustment',
-  TRANSFER = 'transfer',
+  TRANSFER_IN = 'transfer_in',
+  TRANSFER_OUT = 'transfer_out',
+  RETURN = 'return',
+  DAMAGED = 'damaged',
+  EXPIRED = 'expired',
 }
 
-// Inventory Request/Response Types
+// Enhanced Inventory Request/Response Types
 export interface StockAdjustmentRequest {
   inventoryId: string;
   quantity: number;
-  reason?: string;
+  type: 'adjustment' | 'damaged' | 'expired';
+  reason: string;
   notes?: string;
 }
 
@@ -84,15 +91,20 @@ export interface StockTransferRequest {
     quantity: number;
   }[];
   notes?: string;
+  reference?: string;
 }
 
 export interface InventoryListRequest {
   locationId?: string;
   productId?: string;
+  categoryId?: string;
   lowStock?: boolean;
+  outOfStock?: boolean;
   page?: number;
   limit?: number;
   search?: string;
+  sortBy?: 'productName' | 'quantity' | 'lastUpdate';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface InventoryListResponse {
@@ -135,4 +147,67 @@ export interface CreateLocationRequest {
 
 export interface UpdateLocationRequest extends Partial<CreateLocationRequest> {
   id: string;
+}
+
+// Stock Movement Tracking
+export interface StockMovementListRequest {
+  inventoryId?: string;
+  productId?: string;
+  locationId?: string;
+  type?: StockMovementType;
+  dateFrom?: Date;
+  dateTo?: Date;
+  page?: number;
+  limit?: number;
+}
+
+export interface StockMovementListResponse {
+  movements: (StockMovement & {
+    inventory: {
+      product?: {
+        id: string;
+        name: string;
+        sku: string;
+      };
+      variant?: {
+        id: string;
+        name: string;
+        sku: string;
+      };
+      location: {
+        id: string;
+        name: string;
+      };
+    };
+  })[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Inventory Dashboard Types
+export interface InventoryDashboardStats {
+  totalProducts: number;
+  totalLocations: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  totalValue: number;
+  recentMovements: StockMovement[];
+}
+
+export interface InventoryAlert {
+  id: string;
+  type: 'low_stock' | 'out_of_stock' | 'overstock';
+  productId: string;
+  productName: string;
+  sku: string;
+  locationId: string;
+  locationName: string;
+  currentQuantity: number;
+  threshold?: number;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: Date;
 }

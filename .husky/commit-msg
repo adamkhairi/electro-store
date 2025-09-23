@@ -1,4 +1,9 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-bunx --bun commitlint --edit $1
+# Try bunx first, then fallback to npx
+if command -v bunx >/dev/null 2>&1; then
+  bunx --bun commitlint --edit $1
+else
+  npx commitlint --edit $1
+fi
