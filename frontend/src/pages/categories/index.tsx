@@ -63,41 +63,50 @@ const CategoriesPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
-            <p className="text-gray-600 mt-1">
-              Organize your products with hierarchical categories
-            </p>
+    <div className="page-container">
+      <div className="page-wrapper">
+        <div className="page-header">
+          <div className="md:flex md:items-start md:justify-between">
+            <div className="flex-1 min-w-0">
+              <h1 className="page-title">Categories</h1>
+              <p className="page-description">
+                Organize your products with hierarchical categories
+              </p>
+            </div>
+            {viewMode === 'list' && (
+              <div className="page-actions">
+                <Button onClick={handleCreateCategory} className="btn-primary">
+                  <Plus size={16} className="mr-2" />
+                  Create Category
+                </Button>
+              </div>
+            )}
           </div>
+        </div>
 
+        <div className="content-section">
           {viewMode === 'list' && (
-            <Button onClick={handleCreateCategory} className="bg-blue-600 hover:bg-blue-700">
-              <Plus size={16} className="mr-2" />
-              Create Category
-            </Button>
+            <div className="card">
+              <CategoryList
+                key={refreshKey}
+                onEdit={handleEditCategory}
+                onCreateSubcategory={handleCreateSubcategory}
+              />
+            </div>
+          )}
+
+          {(viewMode === 'create' || viewMode === 'edit') && (
+            <div className="card">
+              <CategoryForm
+                category={selectedCategory}
+                parentCategory={parentCategory}
+                onSave={handleSaveCategory}
+                onCancel={handleCancel}
+              />
+            </div>
           )}
         </div>
       </div>
-
-      {viewMode === 'list' && (
-        <CategoryList
-          key={refreshKey}
-          onEdit={handleEditCategory}
-          onCreateSubcategory={handleCreateSubcategory}
-        />
-      )}
-
-      {(viewMode === 'create' || viewMode === 'edit') && (
-        <CategoryForm
-          category={selectedCategory}
-          parentCategory={parentCategory}
-          onSave={handleSaveCategory}
-          onCancel={handleCancel}
-        />
-      )}
     </div>
   );
 };

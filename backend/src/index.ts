@@ -12,9 +12,11 @@ import authRoutes from './routes/auth';
 import categoryRoutes from './routes/categories';
 import customerRoutes from './routes/customers';
 import inventoryRoutes from './routes/inventory';
+import locationRoutes from './routes/locations';
 import orderRoutes from './routes/orders';
 import productRoutes from './routes/products';
 import reportRoutes from './routes/reports';
+import salesRoutes from './routes/sales';
 import supplierRoutes from './routes/suppliers';
 import userRoutes from './routes/users';
 
@@ -59,10 +61,12 @@ app.use('/api/users', authenticateJWT, userRoutes);
 app.use('/api/products', authenticateJWT, productRoutes);
 app.use('/api/categories', authenticateJWT, categoryRoutes);
 app.use('/api/inventory', authenticateJWT, inventoryRoutes);
+app.use('/api/locations', authenticateJWT, locationRoutes);
 app.use('/api/orders', authenticateJWT, orderRoutes);
 app.use('/api/customers', authenticateJWT, customerRoutes);
 app.use('/api/suppliers', authenticateJWT, supplierRoutes);
 app.use('/api/reports', authenticateJWT, reportRoutes);
+app.use('/api/sales', authenticateJWT, salesRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);

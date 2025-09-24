@@ -1,13 +1,13 @@
-import { useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import { loginUser, clearError } from '../store/slices/authSlice';
-import { useAppDispatch } from '../store/hooks';
-import type { RootState } from '../store';
+import { useSelector } from 'react-redux';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import type { RootState } from '../../store';
+import { useAppDispatch } from '../../store/hooks';
+import { clearError, loginUser } from '../../store/slices/authSlice';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),

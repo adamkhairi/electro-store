@@ -31,6 +31,7 @@ model Tenant {
   orders      Order[]
   inventory   Inventory[]
   locations   Location[]
+  sales       Sale[]
 
   @@map("tenants")
 }
@@ -54,6 +55,7 @@ model User {
 
   // Relations
   orders      Order[]
+  sales       Sale[]
 
   @@map("users")
   @@index([tenantId])
@@ -108,6 +110,7 @@ model Location {
 
   // Relations
   inventory   Inventory[]
+  sales       Sale[]
 
   @@map("locations")
   @@index([tenantId])
@@ -171,6 +174,7 @@ model Product {
   inventory       Inventory[]
   orderItems      OrderItem[]
   variants        ProductVariant[]
+  saleItems       SaleItem[]
 
   @@map("products")
   @@index([tenantId])
@@ -200,6 +204,7 @@ model ProductVariant {
   // Relations
   inventory   Inventory[]
   orderItems  OrderItem[]
+  saleItems   SaleItem[]
 
   @@map("product_variants")
   @@index([productId])
@@ -328,6 +333,7 @@ model Customer {
 
   // Relations
   orders      Order[]
+  sales       Sale[]
 
   @@map("customers")
   @@index([tenantId])
@@ -578,6 +584,184 @@ model Payment {
 
   @@map("payments")
   @@index([orderId])
+  @@index([status])
+  @@index([processedAt])
+}
+
+// POS Sales (optimized for point-of-sale transactions)
+model Sale {
+  id          String   @id @default(cuid())
+  saleNumber  String   @unique
+  type        String   @default("sale") // sale, return, exchange, void
+  status      String   @default("completed") // draft, completed, void, refunded
+
+  // Transaction details
+  saleDate    DateTime @default(now())
+  completedAt DateTime?
+  voidedAt    DateTime?
+
+  // Financial information
+  subtotal    Decimal  @db.Decimal(10,2)
+  taxAmount   Decimal  @db.Decimal(10,2)
+  discountAmount Decimal @default(0) @db.Decimal(10,2)
+  total       Decimal  @db.Decimal(10,2)
+
+  // Change and tendered amounts
+  tenderedAmount Decimal? @db.Decimal(10,2)
+  changeAmount   Decimal? @db.Decimal(10,2)
+
+  // Payment information
+  paymentMethod String  // cash, card, check, store_credit, split
+  paymentStatus String  @default("paid") // paid, refunded, partial_refund
+
+  // Customer information (optional for walk-in sales)
+  customerEmail String?
+  customerPhone String?
+  customerName  String?
+
+  // POS session information
+  terminalId    String?
+  receiptNumber String?
+
+  // Notes
+  notes         String?
+  voidReason    String?
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Multi-tenant relationship
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+
+  salesPersonId String
+  salesPerson   User     @relation(fields: [salesPersonId], references: [id])
+
+  locationId    String
+  location      Location @relation(fields: [locationId], references: [id])
+
+  // Relations
+  items         SaleItem[]
+  payments      SalePayment[]
+
+  @@map("sales")
+  @@index([tenantId])
+  @@index([saleNumber])
+  @@index([salesPersonId])
+  @@index([locationId])
+  @@index([customerId])
+  @@index([saleDate])
+  @@index([status])
+}
+
+// POS Sale line items
+model SaleItem {
+  id          String   @id @default(cuid())
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10,2)
+  totalPrice  Decimal  @db.Decimal(10,2)
+
+  // Original price for discount tracking
+  originalPrice Decimal @db.Decimal(10,2)
+  discountAmount Decimal @default(0) @db.Decimal(10,2)
+  discountType   String? // percentage, amount, employee, customer
+  discountReason String?
+
+  // Cost tracking for profit calculation
+  unitCost    Decimal? @db.Decimal(10,2)
+  totalCost   Decimal? @db.Decimal(10,2)
+
+  // Product details at time of sale (for returns/exchanges)
+  productSku  String?
+  productName String
+
+  // Serial numbers or batch tracking
+  serialNumbers String[]
+  batchNumber   String?
+
+  // Tax information
+  taxRate     Decimal? @db.Decimal(5,4)
+  taxAmount   Decimal? @db.Decimal(10,2)
+
+  // Return/void tracking
+  returnedQuantity Int    @default(0)
+  voidedQuantity   Int    @default(0)
+  returnReason     String?
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@map("sale_items")
+  @@index([saleId])
+  @@index([productId])
+  @@index([productSku])
+}
+
+// POS Payment tracking (supports split payments)
+model SalePayment {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(10,2)
+  method      String   // cash, credit_card, debit_card, check, store_credit, gift_card
+  status      String   @default("completed") // completed, failed, refunded
+
+  // Payment processor information
+  processorTransactionId String?
+  processorResponse      Json?
+  authorizationCode      String?
+
+  // Card information (last 4 digits only)
+  cardLast4   String?
+  cardType    String?
+  cardBrand   String?
+
+  // Check information
+  checkNumber String?
+
+  // Cash drawer information
+  cashDrawerId String?
+
+  // Gift card/store credit information
+  giftCardNumber String?
+
+  // Change given (for cash payments)
+  changeGiven Decimal? @db.Decimal(10,2)
+
+  // Reference information
+  reference   String?
+  notes       String?
+
+  // Refund tracking
+  refundedAmount Decimal @default(0) @db.Decimal(10,2)
+  refundedAt     DateTime?
+
+  // Timestamps
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@map("sale_payments")
+  @@index([saleId])
+  @@index([method])
   @@index([status])
   @@index([processedAt])
 }

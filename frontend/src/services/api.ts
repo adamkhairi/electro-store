@@ -54,7 +54,12 @@ api.interceptors.response.use(
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
-        } catch (refreshError) {
+        } catch (err) {
+          // Log to diagnostics (optional)
+          if (import.meta?.env?.DEV) {
+            // eslint-disable-next-line no-console
+            console.warn('Refresh token request failed', err);
+          }
           // Refresh failed, redirect to login
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
@@ -158,6 +163,34 @@ export const inventoryAPI = {
     api.post('/inventory/transfer', data),
 
   getAlerts: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/inventory/alerts'),
+
+  getMovements: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/inventory/movements', { params }),
+
+  getStats: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/inventory/stats'),
+};
+
+// Location API endpoints
+export const locationAPI = {
+  getLocations: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/locations', { params }),
+
+  getLocation: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get(`/locations/${id}`),
+
+  createLocation: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post('/locations', data),
+
+  updateLocation: (id: string, data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.put(`/locations/${id}`, data),
+
+  deleteLocation: (id: string): Promise<AxiosResponse<ApiResponse>> =>
+    api.delete(`/locations/${id}`),
+
+  setDefaultLocation: (id: string): Promise<AxiosResponse<ApiResponse>> =>
+    api.patch(`/locations/${id}/set-default`),
+
+  getLocationStats: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/locations/stats'),
 };
 
 // Order API endpoints
@@ -174,6 +207,20 @@ export const orderAPI = {
 
   processPayment: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
     api.post('/orders/payment', data),
+};
+
+// Sales API endpoints
+export const salesAPI = {
+  createSale: (data: any): Promise<AxiosResponse<ApiResponse<any>>> => api.post('/sales', data),
+  getSales: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/sales', { params }),
+  getSale: (id: string): Promise<AxiosResponse<ApiResponse<any>>> => api.get(`/sales/${id}`),
+  getReceipt: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get(`/sales/${id}/receipt`),
+  getDashboardSummary: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.get('/sales/dashboard/summary', { params }),
+  voidSale: (id: string, data: { reason: string }): Promise<AxiosResponse<ApiResponse<any>>> =>
+    api.post(`/sales/${id}/void`, data),
 };
 
 // Customer API endpoints

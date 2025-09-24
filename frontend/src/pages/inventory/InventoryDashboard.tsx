@@ -249,7 +249,10 @@ const InventoryDashboard: React.FC = () => {
     return matchesSearch && matchesStatus && matchesLocation;
   });
 
-  const uniqueLocations = [...new Set(inventory.map(item => item.location))];
+  // Create unique locations by ID to avoid duplicate keys
+  const uniqueLocations = inventory
+    .map(item => item.location)
+    .filter((location, index, array) => array.findIndex(l => l.id === location.id) === index);
 
   if (loading) {
     return (

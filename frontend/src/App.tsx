@@ -5,12 +5,13 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-d
 import './App.css';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
+import LoginPage from './pages/auth/LoginPage';
 import CategoriesPage from './pages/categories';
 import DashboardPage from './pages/DashboardPage';
 import InventoryDashboard from './pages/inventory/InventoryDashboard';
 import InventoryMovementsPage from './pages/inventory/InventoryMovementsPage';
 import StockAdjustmentPage from './pages/inventory/StockAdjustmentPage';
-import LoginPage from './pages/LoginPage';
+import PosPage from './pages/pos/PosPage';
 import ProductsPage from './pages/products';
 import CreateProductPage from './pages/products/CreateProductPage';
 import EditProductPage from './pages/products/EditProductPage';
@@ -70,6 +71,9 @@ function AppContent(): JSX.Element {
           <Route path="inventory/adjust" element={<StockAdjustmentPage />} />
           <Route path="inventory/transfer" element={<StockAdjustmentPage />} />
           <Route path="inventory/movements" element={<InventoryMovementsPage />} />
+
+          {/* POS */}
+          <Route path="pos" element={<PosPage />} />
 
           {/* Other Routes */}
           <Route path="orders" element={<div>Orders Page (Coming Soon)</div>} />

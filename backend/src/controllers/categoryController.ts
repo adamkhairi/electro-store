@@ -9,8 +9,12 @@ const prisma = new PrismaClient();
 const createCategorySchema = z.object({
   name: z.string().min(1, 'Category name is required').max(255),
   description: z.string().max(1000).optional(),
-  parentId: z.string().optional(),
-  image: z.string().url().optional(),
+  parentId: z.string().nullable().optional(),
+  image: z
+    .string()
+    .optional()
+    .transform(val => (val === '' ? undefined : val))
+    .pipe(z.string().url().optional()),
   sortOrder: z.number().int().min(0).default(0),
 });
 
