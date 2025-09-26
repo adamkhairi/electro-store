@@ -10,9 +10,9 @@
     "shared/*"
   ],
   "scripts": {
-    "dev": "npx concurrently \"bun run dev:frontend\" \"bun run dev:backend\"",
-    "dev:frontend": "cd frontend && bun run dev",
-    "dev:backend": "cd backend && bun run dev",
+    "dev": "npx concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
     "dev:mobile": "cd mobile && npm run start",
     "build": "npm run build:shared && npm run build:frontend && npm run build:backend",
     "build:frontend": "cd frontend && npm run build",
