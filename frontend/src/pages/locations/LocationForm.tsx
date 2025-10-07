@@ -44,6 +44,7 @@ const LocationForm: React.FC = () => {
     if (isEdit && id) {
       fetchLocation(id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEdit, id]);
 
   const fetchLocation = async (locationId: string) => {
@@ -51,7 +52,7 @@ const LocationForm: React.FC = () => {
       setLoading(true);
       const response = await locationAPI.getLocation(locationId);
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         const location = response.data.data;
         setFormData({
           name: location.name,
@@ -117,9 +118,8 @@ const LocationForm: React.FC = () => {
 
     try {
       setSaving(true);
-
       const response = isEdit
-        ? await locationAPI.updateLocation(id!, formData)
+        ? await locationAPI.updateLocation(id!, { id: id!, ...formData })
         : await locationAPI.createLocation(formData);
 
       if (response.data.success) {

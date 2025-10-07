@@ -1,3 +1,4 @@
+import { ProductStatus } from '@electrostock/types';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProductForm from '../../components/products/ProductForm';
@@ -14,7 +15,7 @@ interface ProductFormData {
   costPrice: number;
   sellingPrice: number;
   lowStockThreshold: number;
-  status: 'active' | 'inactive' | 'discontinued';
+  status: ProductStatus;
 }
 
 const EditProductPage: React.FC = () => {
@@ -38,7 +39,7 @@ const EditProductPage: React.FC = () => {
 
       const response = await productAPI.getProduct(productId);
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         const product = response.data.data;
         setInitialData({
           name: product.name,
@@ -71,6 +72,7 @@ const EditProductPage: React.FC = () => {
       setIsSubmitting(true);
 
       const response = await productAPI.updateProduct(id, {
+        id, // Include ID for UpdateProductRequest
         ...data,
         // Ensure barcode is optional
         ...(data.barcode && { barcode: data.barcode }),

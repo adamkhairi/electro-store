@@ -27,13 +27,15 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
+    // @ts-expect-error - zodResolver type compatibility issue with react-hook-form
     resolver: zodResolver(loginSchema),
   });
 
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      const from =
+        (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, location]);
@@ -50,7 +52,7 @@ export default function LoginPage() {
     try {
       await dispatch(loginUser(data)).unwrap();
       toast.success('Login successful!');
-    } catch (error) {
+    } catch {
       // Error is handled by the slice and shown via toast above
     }
   };

@@ -15,7 +15,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import {
   Select,
@@ -79,6 +78,7 @@ const InventoryMovementsPage: React.FC = () => {
 
   useEffect(() => {
     fetchMovements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, typeFilter, locationFilter, dateFilter]);
 
   const fetchMovements = async () => {
@@ -280,12 +280,12 @@ const InventoryMovementsPage: React.FC = () => {
 
   if (loading && movements.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-center items-center min-h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600 text-lg">Loading movements...</p>
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto"></div>
+              <p className="text-gray-600 text-base">Loading movements...</p>
             </div>
           </div>
         </div>
@@ -294,23 +294,25 @@ const InventoryMovementsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="mb-8">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
               <Button
                 variant="outline"
                 onClick={() => navigate('/inventory')}
-                className="flex items-center gap-2"
+                className="mt-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Inventory
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Inventory Movements</h1>
-                <p className="text-gray-600 mt-1">Track all stock movements and changes</p>
+                <h1 className="text-3xl font-semibold text-gray-900">Inventory Movements</h1>
+                <p className="text-base text-gray-600 mt-2">
+                  Track all stock movements and changes
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -319,13 +321,16 @@ const InventoryMovementsPage: React.FC = () => {
                 onClick={() => {
                   /* TODO: Export functionality */
                 }}
-                className="flex items-center gap-2"
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button onClick={fetchMovements} className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
+              <Button
+                onClick={fetchMovements}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
             </div>
@@ -334,105 +339,91 @@ const InventoryMovementsPage: React.FC = () => {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-            <Card className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-white" />
-                  </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-white" />
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Movements</dt>
-                    <dd className="text-lg font-medium text-gray-900">{stats.totalMovements}</dd>
-                  </dl>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-600 truncate">Total Movements</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">
+                    {stats.totalMovements}
+                  </p>
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                    <ArrowUp className="h-5 w-5 text-white" />
-                  </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                  <ArrowUp className="h-5 w-5 text-white" />
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Stock In</dt>
-                    <dd className="text-lg font-medium text-gray-900">{stats.totalIn}</dd>
-                  </dl>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-600 truncate">Stock In</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">{stats.totalIn}</p>
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                    <ArrowDown className="h-5 w-5 text-white" />
-                  </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                  <ArrowDown className="h-5 w-5 text-white" />
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Stock Out</dt>
-                    <dd className="text-lg font-medium text-gray-900">{stats.totalOut}</dd>
-                  </dl>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-600 truncate">Stock Out</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1">{stats.totalOut}</p>
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div
-                    className={`w-8 h-8 rounded-md flex items-center justify-center ${stats.netChange >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center gap-4">
+                <div
+                  className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${stats.netChange >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                >
+                  <BarChart3 className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-600 truncate">Net Change</p>
+                  <p
+                    className={`text-2xl font-semibold mt-1 ${stats.netChange >= 0 ? 'text-green-600' : 'text-red-600'}`}
                   >
-                    <BarChart3 className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Net Change</dt>
-                    <dd
-                      className={`text-lg font-medium ${stats.netChange >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                    >
-                      {stats.netChange >= 0 ? '+' : ''}
-                      {stats.netChange}
-                    </dd>
-                  </dl>
+                    {stats.netChange >= 0 ? '+' : ''}
+                    {stats.netChange}
+                  </p>
                 </div>
               </div>
-            </Card>
+            </div>
           </div>
         )}
 
         {/* Filters */}
-        <Card className="p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div className="flex items-center gap-3 mb-5">
             <Filter className="h-5 w-5 text-gray-600" />
             <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Search</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Product, SKU, reference..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Movement Type</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Movement Type</label>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 border-gray-300 hover:border-gray-400 transition-colors">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -448,9 +439,9 @@ const InventoryMovementsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Location</label>
               <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 border-gray-300 hover:border-gray-400 transition-colors">
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent>
@@ -465,9 +456,9 @@ const InventoryMovementsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">Date Range</label>
               <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 border-gray-300 hover:border-gray-400 transition-colors">
                   <SelectValue placeholder="All Time" />
                 </SelectTrigger>
                 <SelectContent>
@@ -488,17 +479,17 @@ const InventoryMovementsPage: React.FC = () => {
                   setLocationFilter('all');
                   setDateFilter('all');
                 }}
-                className="w-full"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Clear Filters
               </Button>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Movements Table */}
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-5">
             <Package className="h-5 w-5 text-green-600" />
             <h3 className="text-lg font-semibold text-gray-900">Stock Movements</h3>
           </div>
@@ -589,26 +580,26 @@ const InventoryMovementsPage: React.FC = () => {
               </TableBody>
             </Table>
           </div>
-        </Card>
+        </div>
 
         {/* Error State */}
         {error && (
-          <div className="rounded-md bg-red-50 p-4 mt-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error Loading Movements</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
-                </div>
+          <div className="rounded-lg bg-red-50 border border-red-200 p-4 mt-6">
+            <div className="flex items-start gap-3">
+              <svg
+                className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div>
+                <h3 className="text-sm font-semibold text-red-800">Error Loading Movements</h3>
+                <p className="mt-1 text-sm text-red-700">{error}</p>
               </div>
             </div>
           </div>

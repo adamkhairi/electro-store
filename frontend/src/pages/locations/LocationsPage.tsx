@@ -1,3 +1,4 @@
+import { Location } from '@electrostock/types';
 import { Building, Edit, MapPin, Plus, Settings, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
@@ -22,21 +23,8 @@ import {
 } from '../../components/ui/table';
 import { locationAPI } from '../../services/api';
 
-interface Location {
-  id: string;
-  name: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-  phone?: string;
-  email?: string;
-  isActive: boolean;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-  _count: {
+interface LocationWithCount extends Location {
+  _count?: {
     inventory: number;
   };
 }
@@ -44,17 +32,12 @@ interface Location {
 interface LocationStats {
   totalLocations: number;
   activeLocations: number;
-  inactiveLocations: number;
-  locationsWithInventory: number;
-  defaultLocation?: {
-    id: string;
-    name: string;
-  };
+  totalProducts: number;
 }
 
 const LocationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<LocationWithCount[]>([]);
   const [stats, setStats] = useState<LocationStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +54,7 @@ const LocationsPage: React.FC = () => {
 
   useEffect(() => {
     fetchLocations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, searchTerm, statusFilter]);
 
   useEffect(() => {
@@ -91,9 +75,10 @@ const LocationsPage: React.FC = () => {
 
       const response = await locationAPI.getLocations(params);
 
-      if (response.data.success) {
-        setLocations(response.data.data.locations);
-        setTotalLocations(response.data.data.pagination.total);
+      if (response.data.success && response.data.data) {
+        const locations = response.data.data;
+        setLocations(locations);
+        setTotalLocations(locations.length); // For now, use length since we don't have pagination
       } else {
         setError(response.data.error?.message || 'Failed to fetch locations');
       }
@@ -108,7 +93,7 @@ const LocationsPage: React.FC = () => {
   const fetchStats = async () => {
     try {
       const response = await locationAPI.getLocationStats();
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         setStats(response.data.data);
       }
     } catch (err) {
@@ -273,10 +258,8 @@ const LocationsPage: React.FC = () => {
                   <Settings className="h-8 w-8 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">With Inventory</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {stats.locationsWithInventory}
-                  </p>
+                  <p className="text-sm font-medium text-gray-500">Active Locations</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.activeLocations}</p>
                 </div>
               </div>
             </Card>
@@ -287,9 +270,9 @@ const LocationsPage: React.FC = () => {
                   <Building className="h-8 w-8 text-amber-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Default Location</p>
+                  <p className="text-sm font-medium text-gray-500">Total Products</p>
                   <p className="text-lg font-semibold text-gray-900 truncate">
-                    {stats.defaultLocation?.name || 'None'}
+                    {stats.totalProducts}
                   </p>
                 </div>
               </div>
@@ -395,7 +378,7 @@ const LocationsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-gray-900">
-                          {location._count.inventory} items
+                          {location._count?.inventory || 0} items
                         </span>
                       </TableCell>
                       <TableCell>{getStatusBadge(location.isActive)}</TableCell>
@@ -428,7 +411,7 @@ const LocationsPage: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDeleteLocation(location.id)}
-                            disabled={location._count.inventory > 0 || location.isDefault}
+                            disabled={(location._count?.inventory || 0) > 0 || location.isDefault}
                             className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />

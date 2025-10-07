@@ -1,4 +1,4 @@
-import { AuthResponse, LoginRequest, RegisterRequest } from '@electrostock/types';
+import { AuthResponse, LoginRequest, RegisterRequest, User } from '@electrostock/types';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { authAPI } from '../../services/api';
@@ -42,8 +42,9 @@ export const loginUser = createAsyncThunk(
       } else {
         return rejectWithValue(response.data.error?.message || 'Login failed');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Login failed');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      return rejectWithValue(err.response?.data?.error?.message || 'Login failed');
     }
   }
 );
@@ -58,8 +59,9 @@ export const registerUser = createAsyncThunk(
       } else {
         return rejectWithValue(response.data.error?.message || 'Registration failed');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Registration failed');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      return rejectWithValue(err.response?.data?.error?.message || 'Registration failed');
     }
   }
 );
@@ -81,8 +83,9 @@ export const refreshAccessToken = createAsyncThunk(
       } else {
         return rejectWithValue(response.data.error?.message || 'Token refresh failed');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Token refresh failed');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      return rejectWithValue(err.response?.data?.error?.message || 'Token refresh failed');
     }
   }
 );
@@ -108,7 +111,7 @@ export const initializeAuth = createAsyncThunk(
         localStorage.removeItem('refreshToken');
         return rejectWithValue('Invalid token');
       }
-    } catch (error: unknown) {
+    } catch {
       // Token is invalid, clear tokens
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -127,8 +130,9 @@ export const getCurrentUser = createAsyncThunk(
       } else {
         return rejectWithValue(response.data.error?.message || 'Failed to get user profile');
       }
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.error?.message || 'Failed to get user profile');
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: { message?: string } } } };
+      return rejectWithValue(err.response?.data?.error?.message || 'Failed to get user profile');
     }
   }
 );
@@ -235,7 +239,7 @@ const authSlice = createSlice({
     // Get current user
     builder.addCase(getCurrentUser.fulfilled, (state, action) => {
       state.isAuthenticated = true;
-      state.user = action.payload as any;
+      state.user = action.payload as User;
     });
     builder.addCase(getCurrentUser.rejected, state => {
       state.isAuthenticated = false;

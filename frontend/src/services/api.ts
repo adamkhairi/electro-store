@@ -1,10 +1,48 @@
 import {
   ApiResponse,
   AuthResponse,
+  BarcodeValidationRequest,
+  BarcodeValidationResponse,
+  Category,
+  CategoryListRequest,
+  CategoryListResponse,
+  CategoryTreeNode,
+  CreateCategoryRequest,
+  CreateCustomerRequest,
+  CreateLocationRequest,
+  CreateOrderRequest,
+  CreateProductRequest,
+  Customer,
+  DashboardStats,
+  Inventory,
+  InventoryAlert,
+  InventoryDashboardStats,
+  InventoryListRequest,
+  InventoryListResponse,
+  Location,
   LoginRequest,
+  Order,
+  OrderListRequest,
+  OrderListResponse,
+  ProcessPaymentRequest,
+  Product,
+  ProductListRequest,
+  ProductListResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
   RegisterRequest,
+  SkuGenerationRequest,
+  SkuGenerationResponse,
+  StockAdjustmentRequest,
+  StockMovementListRequest,
+  StockMovementListResponse,
+  StockTransferRequest,
+  UpdateCategoryRequest,
+  UpdateCustomerRequest,
+  UpdateLocationRequest,
+  UpdateOrderRequest,
+  UpdateProductRequest,
+  User,
 } from '@electrostock/types';
 import type { AxiosInstance, AxiosResponse } from 'axios';
 import axios from 'axios';
@@ -57,7 +95,6 @@ api.interceptors.response.use(
         } catch (err) {
           // Log to diagnostics (optional)
           if (import.meta?.env?.DEV) {
-            // eslint-disable-next-line no-console
             console.warn('Refresh token request failed', err);
           }
           // Refresh failed, redirect to login
@@ -89,7 +126,7 @@ export const authAPI = {
 
   logout: (): Promise<AxiosResponse<ApiResponse>> => api.post('/auth/logout'),
 
-  getProfile: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/auth/profile'),
+  getProfile: (): Promise<AxiosResponse<ApiResponse<User>>> => api.get('/auth/profile'),
 
   forgotPassword: (email: string): Promise<AxiosResponse<ApiResponse>> =>
     api.post('/auth/forgot-password', { email }),
@@ -106,83 +143,113 @@ export const authAPI = {
 
 // Product API endpoints
 export const productAPI = {
-  getProducts: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.get('/products', { params }),
+  getProducts: (
+    params?: ProductListRequest
+  ): Promise<AxiosResponse<ApiResponse<ProductListResponse>>> => api.get('/products', { params }),
 
-  getProduct: (id: string): Promise<AxiosResponse<ApiResponse<any>>> => api.get(`/products/${id}`),
+  getProduct: (id: string): Promise<AxiosResponse<ApiResponse<Product>>> =>
+    api.get(`/products/${id}`),
 
-  createProduct: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  createProduct: (data: CreateProductRequest): Promise<AxiosResponse<ApiResponse<Product>>> =>
     api.post('/products', data),
 
-  updateProduct: (id: string, data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.put(`/products/${id}`, data),
+  updateProduct: (
+    id: string,
+    data: UpdateProductRequest
+  ): Promise<AxiosResponse<ApiResponse<Product>>> => api.put(`/products/${id}`, data),
 
   deleteProduct: (id: string): Promise<AxiosResponse<ApiResponse>> => api.delete(`/products/${id}`),
 
-  getProductStats: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/products/stats'),
+  getProductStats: (): Promise<
+    AxiosResponse<
+      ApiResponse<{ totalProducts: number; activeProducts: number; lowStockProducts: number }>
+    >
+  > => api.get('/products/stats'),
 
-  generateSku: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  generateSku: (
+    data: SkuGenerationRequest
+  ): Promise<AxiosResponse<ApiResponse<SkuGenerationResponse>>> =>
     api.post('/products/generate-sku', data),
 
-  validateBarcode: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  validateBarcode: (
+    data: BarcodeValidationRequest
+  ): Promise<AxiosResponse<ApiResponse<BarcodeValidationResponse>>> =>
     api.post('/products/validate-barcode', data),
 };
 
 // Category API endpoints
 export const categoryAPI = {
-  getCategories: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getCategories: (
+    params?: CategoryListRequest
+  ): Promise<AxiosResponse<ApiResponse<CategoryListResponse>>> =>
     api.get('/categories', { params }),
 
-  getCategory: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getCategory: (id: string): Promise<AxiosResponse<ApiResponse<Category>>> =>
     api.get(`/categories/${id}`),
 
-  createCategory: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  createCategory: (data: CreateCategoryRequest): Promise<AxiosResponse<ApiResponse<Category>>> =>
     api.post('/categories', data),
 
-  updateCategory: (id: string, data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.put(`/categories/${id}`, data),
+  updateCategory: (
+    id: string,
+    data: UpdateCategoryRequest
+  ): Promise<AxiosResponse<ApiResponse<Category>>> => api.put(`/categories/${id}`, data),
 
   deleteCategory: (id: string): Promise<AxiosResponse<ApiResponse>> =>
     api.delete(`/categories/${id}`),
 
-  getCategoryTree: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/categories/tree'),
+  getCategoryTree: (): Promise<AxiosResponse<ApiResponse<CategoryTreeNode[]>>> =>
+    api.get('/categories/tree'),
 
-  reorderCategories: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.post('/categories/reorder', data),
+  reorderCategories: (
+    data: { categoryId: string; newSortOrder: number }[]
+  ): Promise<AxiosResponse<ApiResponse<Category[]>>> => api.post('/categories/reorder', data),
 };
 
 // Inventory API endpoints
 export const inventoryAPI = {
-  getInventory: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getInventory: (
+    params?: InventoryListRequest
+  ): Promise<AxiosResponse<ApiResponse<InventoryListResponse>>> =>
     api.get('/inventory', { params }),
 
-  adjustStock: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  adjustStock: (data: StockAdjustmentRequest): Promise<AxiosResponse<ApiResponse<Inventory>>> =>
     api.post('/inventory/adjust', data),
 
-  transferStock: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  transferStock: (
+    data: StockTransferRequest
+  ): Promise<AxiosResponse<ApiResponse<{ success: boolean; transferredItems: number }>>> =>
     api.post('/inventory/transfer', data),
 
-  getAlerts: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/inventory/alerts'),
+  getAlerts: (): Promise<AxiosResponse<ApiResponse<InventoryAlert[]>>> =>
+    api.get('/inventory/alerts'),
 
-  getMovements: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getMovements: (
+    params?: StockMovementListRequest
+  ): Promise<AxiosResponse<ApiResponse<StockMovementListResponse>>> =>
     api.get('/inventory/movements', { params }),
 
-  getStats: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/inventory/stats'),
+  getStats: (): Promise<AxiosResponse<ApiResponse<InventoryDashboardStats>>> =>
+    api.get('/inventory/stats'),
 };
 
 // Location API endpoints
 export const locationAPI = {
-  getLocations: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.get('/locations', { params }),
+  getLocations: (params?: {
+    search?: string;
+    includeInactive?: boolean;
+  }): Promise<AxiosResponse<ApiResponse<Location[]>>> => api.get('/locations', { params }),
 
-  getLocation: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getLocation: (id: string): Promise<AxiosResponse<ApiResponse<Location>>> =>
     api.get(`/locations/${id}`),
 
-  createLocation: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  createLocation: (data: CreateLocationRequest): Promise<AxiosResponse<ApiResponse<Location>>> =>
     api.post('/locations', data),
 
-  updateLocation: (id: string, data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.put(`/locations/${id}`, data),
+  updateLocation: (
+    id: string,
+    data: UpdateLocationRequest
+  ): Promise<AxiosResponse<ApiResponse<Location>>> => api.put(`/locations/${id}`, data),
 
   deleteLocation: (id: string): Promise<AxiosResponse<ApiResponse>> =>
     api.delete(`/locations/${id}`),
@@ -190,52 +257,81 @@ export const locationAPI = {
   setDefaultLocation: (id: string): Promise<AxiosResponse<ApiResponse>> =>
     api.patch(`/locations/${id}/set-default`),
 
-  getLocationStats: (): Promise<AxiosResponse<ApiResponse<any>>> => api.get('/locations/stats'),
+  getLocationStats: (): Promise<
+    AxiosResponse<
+      ApiResponse<{ totalLocations: number; activeLocations: number; totalProducts: number }>
+    >
+  > => api.get('/locations/stats'),
 };
 
 // Order API endpoints
 export const orderAPI = {
-  getOrders: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getOrders: (params?: OrderListRequest): Promise<AxiosResponse<ApiResponse<OrderListResponse>>> =>
     api.get('/orders', { params }),
 
-  getOrder: (id: string): Promise<AxiosResponse<ApiResponse<any>>> => api.get(`/orders/${id}`),
+  getOrder: (id: string): Promise<AxiosResponse<ApiResponse<Order>>> => api.get(`/orders/${id}`),
 
-  createOrder: (data: any): Promise<AxiosResponse<ApiResponse<any>>> => api.post('/orders', data),
+  createOrder: (data: CreateOrderRequest): Promise<AxiosResponse<ApiResponse<Order>>> =>
+    api.post('/orders', data),
 
-  updateOrder: (id: string, data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  updateOrder: (id: string, data: UpdateOrderRequest): Promise<AxiosResponse<ApiResponse<Order>>> =>
     api.put(`/orders/${id}`, data),
 
-  processPayment: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  processPayment: (
+    data: ProcessPaymentRequest
+  ): Promise<AxiosResponse<ApiResponse<{ paymentId: string; status: string }>>> =>
     api.post('/orders/payment', data),
 };
 
 // Sales API endpoints
 export const salesAPI = {
-  createSale: (data: any): Promise<AxiosResponse<ApiResponse<any>>> => api.post('/sales', data),
-  getSales: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  createSale: (data: CreateOrderRequest): Promise<AxiosResponse<ApiResponse<Order>>> =>
+    api.post('/sales', data),
+  getSales: (params?: OrderListRequest): Promise<AxiosResponse<ApiResponse<OrderListResponse>>> =>
     api.get('/sales', { params }),
-  getSale: (id: string): Promise<AxiosResponse<ApiResponse<any>>> => api.get(`/sales/${id}`),
-  getReceipt: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getSale: (id: string): Promise<AxiosResponse<ApiResponse<Order>>> => api.get(`/sales/${id}`),
+  getReceipt: (
+    id: string
+  ): Promise<AxiosResponse<ApiResponse<{ receiptData: string; printUrl?: string }>>> =>
     api.get(`/sales/${id}/receipt`),
-  getDashboardSummary: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getDashboardSummary: (params?: {
+    period?: 'today' | 'week' | 'month' | 'year';
+  }): Promise<AxiosResponse<ApiResponse<DashboardStats>>> =>
     api.get('/sales/dashboard/summary', { params }),
-  voidSale: (id: string, data: { reason: string }): Promise<AxiosResponse<ApiResponse<any>>> =>
+  voidSale: (
+    id: string,
+    data: { reason: string }
+  ): Promise<AxiosResponse<ApiResponse<{ voidedSaleId: string; refundAmount: number }>>> =>
     api.post(`/sales/${id}/void`, data),
 };
 
 // Customer API endpoints
 export const customerAPI = {
-  getCustomers: (params?: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.get('/customers', { params }),
+  getCustomers: (params?: {
+    search?: string;
+    type?: 'individual' | 'business';
+    status?: 'active' | 'inactive' | 'blocked';
+    page?: number;
+    limit?: number;
+  }): Promise<
+    AxiosResponse<
+      ApiResponse<{
+        customers: Customer[];
+        pagination: { page: number; limit: number; total: number; totalPages: number };
+      }>
+    >
+  > => api.get('/customers', { params }),
 
-  getCustomer: (id: string): Promise<AxiosResponse<ApiResponse<any>>> =>
+  getCustomer: (id: string): Promise<AxiosResponse<ApiResponse<Customer>>> =>
     api.get(`/customers/${id}`),
 
-  createCustomer: (data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
+  createCustomer: (data: CreateCustomerRequest): Promise<AxiosResponse<ApiResponse<Customer>>> =>
     api.post('/customers', data),
 
-  updateCustomer: (id: string, data: any): Promise<AxiosResponse<ApiResponse<any>>> =>
-    api.put(`/customers/${id}`, data),
+  updateCustomer: (
+    id: string,
+    data: UpdateCustomerRequest
+  ): Promise<AxiosResponse<ApiResponse<Customer>>> => api.put(`/customers/${id}`, data),
 };
 
 // Export the configured axios instance

@@ -1,3 +1,4 @@
+import { ProductListRequest, ProductStatus, Product as SharedProduct } from '@electrostock/types';
 import {
   AlertTriangle,
   Download,
@@ -42,24 +43,20 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
-import { formatCurrency } from '../../lib/utils';
 import { productAPI } from '../../services/api';
 
-interface Product {
-  id: string;
-  sku: string;
-  name: string;
-  description?: string;
-  brand?: string;
-  model?: string;
-  costPrice: number;
-  sellingPrice: number;
-  status: 'active' | 'inactive' | 'discontinued';
-  lowStockThreshold?: number;
-  category?: {
-    id: string;
-    name: string;
-  };
+// Utility function for currency formatting
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+};
+
+// Extend shared Product type to match UI needs with string dates
+interface Product extends Omit<SharedProduct, 'createdAt' | 'updatedAt'> {
+  createdAt: string;
+  updatedAt: string;
   inventory?: Array<{
     quantity: number;
     availableQuantity: number;
@@ -68,8 +65,6 @@ interface Product {
       name: string;
     };
   }>;
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface ProductStats {
@@ -77,15 +72,6 @@ interface ProductStats {
   active: number;
   lowStock: number;
   outOfStock: number;
-}
-
-interface ProductListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
 }
 
 const ProductsPage: React.FC = () => {
@@ -114,19 +100,25 @@ const ProductsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const params: ProductListParams = {
+      const params: ProductListRequest = {
         page,
         limit,
-        sortBy,
+        sortBy: sortBy as 'name' | 'sku' | 'price' | 'createdAt',
         sortOrder,
         ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter !== 'all' && { status: statusFilter }),
+        ...(statusFilter !== 'all' && { status: statusFilter as ProductStatus }),
       };
 
       const response = await productAPI.getProducts(params);
 
-      if (response.data.success) {
-        setProducts(response.data.data.products);
+      if (response.data.success && response.data.data) {
+        // Convert Date objects to strings for UI compatibility
+        const products = response.data.data.products.map(product => ({
+          ...product,
+          createdAt: new Date(product.createdAt).toISOString(),
+          updatedAt: new Date(product.updatedAt).toISOString(),
+        }));
+        setProducts(products);
         setTotalProducts(response.data.data.pagination.total);
       } else {
         setError('Failed to fetch products');
@@ -142,8 +134,15 @@ const ProductsPage: React.FC = () => {
   const fetchStats = async () => {
     try {
       const response = await productAPI.getProductStats();
-      if (response.data.success) {
-        setStats(response.data.data);
+      if (response.data.success && response.data.data) {
+        // Map the API response to our ProductStats interface
+        const apiStats = response.data.data;
+        setStats({
+          total: apiStats.totalProducts || 0,
+          active: apiStats.activeProducts || 0,
+          lowStock: apiStats.lowStockProducts || 0,
+          outOfStock: 0, // This might need to be added to the API response
+        });
       }
     } catch (err) {
       console.error('Error fetching product stats:', err);
@@ -152,6 +151,7 @@ const ProductsPage: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, searchTerm, statusFilter, sortBy, sortOrder]);
 
   useEffect(() => {
@@ -273,8 +273,8 @@ const ProductsPage: React.FC = () => {
   }
 
   return (
-    <div className="page-container">
-      <div className="page-wrapper">
+    <div className="min-h-full bg-gray-50">
+      <div className="w-full px-4 sm:px-4 lg:px-6 py-6">
         <div className="page-header">
           <div className="md:flex md:items-start md:justify-between">
             <div className="flex-1 min-w-0">
@@ -318,86 +318,66 @@ const ProductsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="content-section">
+        <div className="space-y-6">
           {/* Stats overview */}
           {stats && (
-            <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Total Products */}
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                        <Package className="h-5 w-5 text-white" />
-                      </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                      <Package className="h-5 w-5 text-white" />
                     </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Total Products
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">{stats.total}</dd>
-                      </dl>
-                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <dt className="text-sm font-medium text-gray-500">Total Products</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{stats.total}</dd>
                   </div>
                 </div>
               </div>
 
               {/* Active Products */}
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-white" />
-                      </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-white" />
                     </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">
-                          Active Products
-                        </dt>
-                        <dd className="text-lg font-medium text-gray-900">{stats.active}</dd>
-                      </dl>
-                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <dt className="text-sm font-medium text-gray-500">Active Products</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{stats.active}</dd>
                   </div>
                 </div>
               </div>
 
               {/* Low Stock */}
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                        <AlertTriangle className="h-5 w-5 text-white" />
-                      </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-white" />
                     </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Low Stock</dt>
-                        <dd className="text-lg font-medium text-gray-900">{stats.lowStock}</dd>
-                      </dl>
-                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <dt className="text-sm font-medium text-gray-500">Low Stock</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{stats.lowStock}</dd>
                   </div>
                 </div>
               </div>
 
               {/* Out of Stock */}
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="p-5">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                        <XCircle className="h-5 w-5 text-white" />
-                      </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                      <XCircle className="h-5 w-5 text-white" />
                     </div>
-                    <div className="ml-5 w-0 flex-1">
-                      <dl>
-                        <dt className="text-sm font-medium text-gray-500 truncate">Out of Stock</dt>
-                        <dd className="text-lg font-medium text-gray-900">{stats.outOfStock}</dd>
-                      </dl>
-                    </div>
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <dt className="text-sm font-medium text-gray-500">Out of Stock</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{stats.outOfStock}</dd>
                   </div>
                 </div>
               </div>
@@ -405,22 +385,22 @@ const ProductsPage: React.FC = () => {
           )}
 
           {/* Filters */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4">
-              <div className="flex flex-col lg:flex-row gap-4 items-center">
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="p-4">
+              <div className="flex flex-col lg:flex-row gap-3 items-center">
                 <div className="relative flex-1 w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search products by name, SKU, or brand..."
                     value={searchTerm}
                     onChange={handleSearchChange}
-                    className="pl-10 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+                    className="pl-10"
                   />
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 w-full lg:w-auto">
                   <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-                    <SelectTrigger className="w-[180px] border-gray-300">
+                    <SelectTrigger className="w-full lg:w-[180px]">
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -431,13 +411,13 @@ const ProductsPage: React.FC = () => {
                     </SelectContent>
                   </Select>
 
-                  <div className="flex items-center">
+                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setViewMode('table')}
-                      className={`inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                      className={`inline-flex items-center px-3 py-2 text-sm font-medium transition-colors ${
                         viewMode === 'table'
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
+                          ? 'bg-blue-50 text-blue-700'
                           : 'bg-white text-gray-700 hover:bg-gray-50'
                       }`}
                     >
@@ -446,9 +426,9 @@ const ProductsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setViewMode('grid')}
-                      className={`inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                      className={`inline-flex items-center px-3 py-2 text-sm font-medium border-l border-gray-300 transition-colors ${
                         viewMode === 'grid'
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
+                          ? 'bg-blue-50 text-blue-700'
                           : 'bg-white text-gray-700 hover:bg-gray-50'
                       }`}
                     >
@@ -460,7 +440,7 @@ const ProductsPage: React.FC = () => {
 
               {/* Advanced Filters */}
               {showFilters && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -473,7 +453,7 @@ const ProductsPage: React.FC = () => {
                           setPage(1);
                         }}
                       >
-                        <SelectTrigger className="border-gray-300">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -495,10 +475,10 @@ const ProductsPage: React.FC = () => {
                             setSortOrder('asc');
                             setPage(1);
                           }}
-                          className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                          className={`flex-1 inline-flex justify-center items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg transition-colors ${
                             sortOrder === 'asc'
-                              ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                              ? 'bg-blue-50 text-blue-700 border-blue-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-50'
                           }`}
                         >
                           <SortAsc className="h-4 w-4 mr-1" />
@@ -510,10 +490,10 @@ const ProductsPage: React.FC = () => {
                             setSortOrder('desc');
                             setPage(1);
                           }}
-                          className={`flex-1 inline-flex justify-center items-center px-3 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                          className={`flex-1 inline-flex justify-center items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg transition-colors ${
                             sortOrder === 'desc'
-                              ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                              : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                              ? 'bg-blue-50 text-blue-700 border-blue-300'
+                              : 'bg-white text-gray-700 hover:bg-gray-50'
                           }`}
                         >
                           <SortDesc className="h-4 w-4 mr-1" />
@@ -526,7 +506,7 @@ const ProductsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowFilters(false)}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                       >
                         Hide Filters
                       </button>
@@ -536,274 +516,371 @@ const ProductsPage: React.FC = () => {
               )}
             </div>
           </div>
-
-          {/* Products Table */}
-          <div className="bg-white shadow rounded-lg">
-            {/* Bulk Actions Bar */}
-            {selectedProducts.length > 0 && (
-              <div className="bg-indigo-50 border-b border-indigo-200 px-6 py-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-indigo-900">
-                      {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''}{' '}
-                      selected
-                    </span>
+          {/* Products Table/Grid View */}
+          {viewMode === 'table' ? (
+            <div className="bg-white border border-gray-200 rounded-lg">
+              {/* Bulk Actions Bar */}
+              {selectedProducts.length > 0 && (
+                <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-blue-900">
+                        {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''}{' '}
+                        selected
+                      </span>
+                      <button
+                        type="button"
+                        className="inline-flex items-center px-3 py-1 border border-blue-300 text-xs font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 transition-colors"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Export Selected
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      className="inline-flex items-center px-3 py-1 border border-indigo-300 text-xs font-medium rounded text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      onClick={() => setSelectedProducts([])}
+                      className="text-blue-700 hover:text-blue-900 text-sm font-medium"
                     >
-                      <Download className="h-3 w-3 mr-1" />
-                      Export Selected
+                      Clear Selection
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedProducts([])}
-                    className="text-indigo-700 hover:text-indigo-900 text-sm font-medium"
-                  >
-                    Clear Selection
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="w-12">
-                      <input
-                        type="checkbox"
-                        checked={selectedProducts.length === products.length && products.length > 0}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                      />
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Product
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      SKU
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Brand
-                    </TableHead>
-                    <TableHead
-                      className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                      onClick={() => handleSortChange('sellingPrice')}
-                    >
-                      <div className="flex items-center gap-1">
-                        Price
-                        {sortBy === 'sellingPrice' &&
-                          (sortOrder === 'asc' ? (
-                            <SortAsc className="h-3 w-3" />
-                          ) : (
-                            <SortDesc className="h-3 w-3" />
-                          ))}
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stock Status
-                    </TableHead>
-                    <TableHead
-                      className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                      onClick={() => handleSortChange('status')}
-                    >
-                      <div className="flex items-center gap-1">
-                        Status
-                        {sortBy === 'status' &&
-                          (sortOrder === 'asc' ? (
-                            <SortAsc className="h-3 w-3" />
-                          ) : (
-                            <SortDesc className="h-3 w-3" />
-                          ))}
-                      </div>
-                    </TableHead>
-                    <TableHead className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.length === 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-12">
-                        <div className="flex flex-col items-center justify-center space-y-4">
-                          <div className="p-4 bg-gray-100 rounded-full">
-                            <Package className="h-8 w-8 text-gray-400" />
-                          </div>
-                          <div className="space-y-2">
-                            <p className="text-lg font-medium text-gray-900">No products found</p>
-                            <p className="text-gray-500 max-w-md">
-                              {searchTerm || statusFilter !== 'all'
-                                ? 'Try adjusting your search or filter criteria.'
-                                : 'Get started by adding your first product to the catalog.'}
-                            </p>
-                          </div>
-                          <Button onClick={() => navigate('/products/new')} className="mt-4">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Product
-                          </Button>
+                      <TableHead className="w-12">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedProducts.length === products.length && products.length > 0
+                          }
+                          onChange={handleSelectAll}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-gray-500" />
+                          Product
                         </div>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-2">
+                          <Grid3X3 className="h-4 w-4 text-gray-500" />
+                          SKU
+                        </div>
+                      </TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-blue-600 transition-colors"
+                        onClick={() => handleSortChange('sellingPrice')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Price
+                          {sortBy === 'sellingPrice' &&
+                            (sortOrder === 'asc' ? (
+                              <SortAsc className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <SortDesc className="h-4 w-4 text-blue-600" />
+                            ))}
+                        </div>
+                      </TableHead>
+                      <TableHead>Stock Status</TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:text-blue-600 transition-colors"
+                        onClick={() => handleSortChange('status')}
+                      >
+                        <div className="flex items-center gap-2">
+                          Status
+                          {sortBy === 'status' &&
+                            (sortOrder === 'asc' ? (
+                              <SortAsc className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <SortDesc className="h-4 w-4 text-blue-600" />
+                            ))}
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-12">
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
                     </TableRow>
-                  ) : (
-                    products.map(product => {
-                      const stockStatus = getStockStatus(product);
-                      const totalStock =
-                        product.inventory?.reduce((sum, inv) => sum + inv.availableQuantity, 0) ||
-                        0;
-                      const isSelected = selectedProducts.includes(product.id);
+                  </TableHeader>
+                  <TableBody>
+                    {products.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-12">
+                          <div className="flex flex-col items-center justify-center space-y-4">
+                            <div className="p-4 bg-gray-100 rounded-full">
+                              <Package className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-lg font-medium text-gray-900">No products found</p>
+                              <p className="text-gray-500 max-w-md">
+                                {searchTerm || statusFilter !== 'all'
+                                  ? 'Try adjusting your search or filter criteria.'
+                                  : 'Get started by adding your first product to the catalog.'}
+                              </p>
+                            </div>
+                            <Button onClick={() => navigate('/products/new')} className="mt-4">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Product
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      products.map(product => {
+                        const stockStatus = getStockStatus(product);
+                        const totalStock =
+                          product.inventory?.reduce((sum, inv) => sum + inv.availableQuantity, 0) ||
+                          0;
+                        const isSelected = selectedProducts.includes(product.id);
 
-                      return (
-                        <TableRow
-                          key={product.id}
-                          className={`${isSelected ? 'bg-indigo-50' : 'bg-white'} hover:bg-gray-50`}
-                        >
-                          <TableCell className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleSelectProduct(product.id)}
-                              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="relative">
+                        return (
+                          <TableRow key={product.id} className={isSelected ? 'bg-blue-50' : ''}>
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleSelectProduct(product.id)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
                                 <img
                                   src={getProductImage(product)}
                                   alt={product.name}
                                   className="w-12 h-12 rounded-lg object-cover border border-gray-200"
-                                  onError={e => {
-                                    // Fallback to a stable SVG placeholder
-                                    e.currentTarget.src = `data:image/svg+xml;base64,${btoa(`
-                                      <svg width="60" height="60" xmlns="http://www.w3.org/2000/svg">
-                                        <rect width="60" height="60" fill="#f3f4f6"/>
-                                        <text x="30" y="35" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle" fill="#6b7280">${product.name.charAt(0)}</text>
-                                      </svg>
-                                    `)}`;
-                                  }}
                                 />
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="font-medium text-gray-900 truncate">
-                                  {product.name}
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-medium text-gray-900 truncate">
+                                    {product.name}
+                                  </div>
+                                  {product.description && (
+                                    <div className="text-sm text-gray-500 line-clamp-1">
+                                      {product.description}
+                                    </div>
+                                  )}
+                                  {product.category && (
+                                    <div className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 mt-1">
+                                      {product.category.name}
+                                    </div>
+                                  )}
                                 </div>
-                                {product.description && (
-                                  <div className="text-sm text-gray-500 line-clamp-1 mt-1">
-                                    {product.description}
-                                  </div>
-                                )}
-                                {product.category && (
-                                  <div className="text-xs text-blue-600 mt-1">
-                                    {product.category.name}
-                                  </div>
-                                )}
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm text-gray-600">
-                            {product.sku}
-                          </TableCell>
-                          <TableCell className="text-gray-900 font-medium">
-                            {product.brand || '-'}
-                          </TableCell>
-                          <TableCell className="font-semibold text-gray-900">
-                            {formatCurrency(product.sellingPrice)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
+                            </TableCell>
+                            <TableCell>
+                              <code className="font-mono text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                                {product.sku}
+                              </code>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-900">
+                                {product.brand || (
+                                  <span className="text-gray-400 italic">No brand</span>
+                                )}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-semibold text-gray-900">
+                                {formatCurrency(product.sellingPrice)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <Badge variant={stockStatus.variant} className="font-medium">
+                                  {stockStatus.status}
+                                </Badge>
+                                <div className="text-xs text-gray-500">{totalStock} units</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
                               <Badge
-                                variant={stockStatus.variant}
-                                className={
-                                  stockStatus.variant === 'destructive'
-                                    ? 'bg-red-100 text-red-800 hover:bg-red-100'
-                                    : stockStatus.variant === 'secondary'
-                                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-100'
-                                      : 'bg-green-100 text-green-800 hover:bg-green-100'
-                                }
+                                variant={getStatusVariant(product.status)}
+                                className="capitalize"
                               >
-                                {stockStatus.status}
+                                {product.status}
                               </Badge>
-                              <div className="text-xs text-gray-500">{totalStock} units</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={getStatusVariant(product.status)}
-                              className={
-                                product.status === 'active'
-                                  ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                                  : product.status === 'inactive'
-                                    ? 'bg-gray-100 text-gray-800 hover:bg-gray-100'
-                                    : 'bg-red-100 text-red-800 hover:bg-red-100'
-                              }
-                            >
-                              {product.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem
-                                  onClick={() => navigate(`/products/${product.id}`)}
-                                  className="gap-2"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => navigate(`/products/${product.id}/edit`)}
-                                  className="gap-2"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  Edit Product
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteProduct(product.id)}
-                                  className="gap-2 text-red-600 focus:text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuItem
+                                    onClick={() => navigate(`/products/${product.id}`)}
+                                    className="gap-2"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => navigate(`/products/${product.id}/edit`)}
+                                    className="gap-2"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                    Edit Product
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteProduct(product.id)}
+                                    className="gap-2 text-red-600 focus:text-red-700"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Grid View */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {products.length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-12">
+                  <div className="p-4 bg-gray-100 rounded-full">
+                    <Package className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <div className="mt-4 space-y-2 text-center">
+                    <p className="text-lg font-medium text-gray-900">No products found</p>
+                    <p className="text-gray-500 max-w-md">
+                      {searchTerm || statusFilter !== 'all'
+                        ? 'Try adjusting your search or filter criteria.'
+                        : 'Get started by adding your first product to the catalog.'}
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate('/products/new')} className="mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
+                </div>
+              ) : (
+                products.map(product => {
+                  const stockStatus = getStockStatus(product);
+                  const totalStock =
+                    product.inventory?.reduce((sum, inv) => sum + inv.availableQuantity, 0) || 0;
+                  const isSelected = selectedProducts.includes(product.id);
+
+                  return (
+                    <div
+                      key={product.id}
+                      className={`bg-white border rounded-lg overflow-hidden transition-all hover:shadow-md ${
+                        isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                      }`}
+                    >
+                      <div className="relative">
+                        <img
+                          src={getProductImage(product)}
+                          alt={product.name}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="absolute top-2 right-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleSelectProduct(product.id)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white"
+                          />
+                        </div>
+                        <div className="absolute top-2 left-2">
+                          <Badge variant={getStatusVariant(product.status)} className="capitalize">
+                            {product.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <div className="mb-2">
+                          <h3 className="font-medium text-gray-900 truncate">{product.name}</h3>
+                          {product.description && (
+                            <p className="text-sm text-gray-500 line-clamp-2 mt-1">
+                              {product.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <code className="text-xs font-mono text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                            {product.sku}
+                          </code>
+                          {product.category && (
+                            <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">
+                              {product.category.name}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-lg font-semibold text-gray-900">
+                            {formatCurrency(product.sellingPrice)}
+                          </span>
+                          <Badge variant={stockStatus.variant} className="text-xs">
+                            {stockStatus.status}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                          <span>{product.brand || 'No brand'}</span>
+                          <span>{totalStock} units</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => navigate(`/products/${product.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/products/${product.id}/edit`)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>
@@ -817,11 +894,11 @@ const ProductsPage: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px">
                     <button
                       onClick={() => setPage(Math.max(1, page - 1))}
                       disabled={page === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Previous
                     </button>
@@ -831,9 +908,9 @@ const ProductsPage: React.FC = () => {
                         <button
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
                             page === pageNum
-                              ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                               : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                           }`}
                         >
@@ -844,7 +921,7 @@ const ProductsPage: React.FC = () => {
                     <button
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                       disabled={page === totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Next
                     </button>
@@ -856,7 +933,7 @@ const ProductsPage: React.FC = () => {
 
           {/* Error State */}
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-lg bg-red-50 border border-red-200 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <XCircle className="h-5 w-5 text-red-400" />

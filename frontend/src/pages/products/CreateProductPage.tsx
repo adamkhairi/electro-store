@@ -1,3 +1,4 @@
+import { ProductStatus } from '@electrostock/types';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from '../../components/products/ProductForm';
@@ -14,7 +15,7 @@ interface ProductFormData {
   costPrice: number;
   sellingPrice: number;
   lowStockThreshold: number;
-  status: 'active' | 'inactive' | 'discontinued';
+  status: ProductStatus;
 }
 
 const CreateProductPage: React.FC = () => {
@@ -31,7 +32,7 @@ const CreateProductPage: React.FC = () => {
         ...(data.barcode && { barcode: data.barcode }),
       });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         // Navigate to the product detail page
         navigate(`/products/${response.data.data.id}`, {
           state: { message: 'Product created successfully!' },

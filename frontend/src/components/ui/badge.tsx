@@ -4,17 +4,19 @@ import * as React from 'react';
 import { cn } from '../../lib/utils';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium tracking-wide transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-blue-600 text-white hover:bg-blue-700',
-        secondary: 'border-transparent bg-gray-100 text-gray-900 hover:bg-gray-200',
-        destructive: 'border-transparent bg-red-600 text-white hover:bg-red-700',
-        outline: 'text-gray-900 border-gray-300',
-        success: 'border-transparent bg-green-500 text-white hover:bg-green-600',
-        warning: 'border-transparent bg-yellow-500 text-white hover:bg-yellow-600',
-        error: 'border-transparent bg-red-500 text-white hover:bg-red-600',
+        default: 'border-transparent bg-primary/12 text-primary hover:bg-primary/18',
+        secondary:
+          'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        destructive:
+          'border-transparent bg-destructive/15 text-destructive hover:bg-destructive/25',
+        outline: 'border-border text-muted-foreground hover:text-foreground',
+        success: 'border-transparent bg-success/15 text-success-700 hover:bg-success/25',
+        warning: 'border-transparent bg-warning/20 text-warning-700 hover:bg-warning/30',
+        error: 'border-transparent bg-error/15 text-error-700 hover:bg-error/25',
       },
     },
     defaultVariants: {
@@ -31,4 +33,4 @@ function Badge({ className, variant, ...props }: BadgeProps) {
   return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-export { Badge, badgeVariants };
+export { Badge };

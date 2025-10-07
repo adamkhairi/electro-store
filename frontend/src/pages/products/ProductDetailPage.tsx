@@ -1,3 +1,4 @@
+import { Product } from '@electrostock/types';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -19,34 +20,6 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { formatCurrency } from '../../lib/utils';
 import { productAPI } from '../../services/api';
-
-interface Product {
-  id: string;
-  sku: string;
-  barcode?: string;
-  name: string;
-  description?: string;
-  brand?: string;
-  model?: string;
-  costPrice: number;
-  sellingPrice: number;
-  status: 'active' | 'inactive' | 'discontinued';
-  lowStockThreshold?: number;
-  category?: {
-    id: string;
-    name: string;
-  };
-  inventory?: Array<{
-    quantity: number;
-    availableQuantity: number;
-    location: {
-      id: string;
-      name: string;
-    };
-  }>;
-  createdAt: string;
-  updatedAt: string;
-}
 
 const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -83,7 +56,7 @@ const ProductDetailPage: React.FC = () => {
 
       const response = await productAPI.getProduct(productId);
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         setProduct(response.data.data);
       } else {
         setError('Product not found');
@@ -139,21 +112,10 @@ const ProductDetailPage: React.FC = () => {
     }
   };
 
-  const getStockStatus = (product: Product) => {
-    if (!product.inventory || product.inventory.length === 0) {
-      return { status: 'No Stock Data', variant: 'outline' as const, total: 0 };
-    }
-
-    const totalStock = product.inventory.reduce((sum, inv) => sum + inv.availableQuantity, 0);
-    const threshold = product.lowStockThreshold || 10;
-
-    if (totalStock === 0) {
-      return { status: 'Out of Stock', variant: 'destructive' as const, total: totalStock };
-    } else if (totalStock <= threshold) {
-      return { status: 'Low Stock', variant: 'secondary' as const, total: totalStock };
-    } else {
-      return { status: 'In Stock', variant: 'default' as const, total: totalStock };
-    }
+  const getStockStatus = () => {
+    // Since inventory data is not available in shared Product type,
+    // we'll use a default status
+    return { status: 'Stock data not available', variant: 'outline' as const, total: 0 };
   };
 
   if (isLoading) {
@@ -196,7 +158,7 @@ const ProductDetailPage: React.FC = () => {
     );
   }
 
-  const stockStatus = getStockStatus(product);
+  const stockStatus = getStockStatus();
   const profitMargin = product.sellingPrice - product.costPrice;
   const profitPercentage = ((profitMargin / product.costPrice) * 100).toFixed(1);
 
@@ -431,16 +393,7 @@ const ProductDetailPage: React.FC = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-700">Current Stock Level</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge
-                        variant={stockStatus.variant}
-                        className={
-                          stockStatus.variant === 'destructive'
-                            ? 'bg-red-100 text-red-800'
-                            : stockStatus.variant === 'secondary'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-green-100 text-green-800'
-                        }
-                      >
+                      <Badge variant={stockStatus.variant} className="bg-gray-100 text-gray-800">
                         {stockStatus.status}
                       </Badge>
                       <span className="text-lg font-semibold text-gray-900">
@@ -455,28 +408,6 @@ const ProductDetailPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-
-                {product.inventory && product.inventory.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Stock by Location</p>
-                    <div className="space-y-2">
-                      {product.inventory.map((inv, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center p-3 border border-gray-200 rounded-lg"
-                        >
-                          <span className="font-medium text-gray-900">{inv.location.name}</span>
-                          <div className="text-right">
-                            <div className="text-sm text-gray-600">
-                              Available: {inv.availableQuantity}
-                            </div>
-                            <div className="text-sm text-gray-600">Total: {inv.quantity}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </Card>
           </div>

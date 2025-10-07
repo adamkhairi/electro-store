@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { categoryAPI } from '../../services/api';
 import { Button } from '../ui/button';
-import { Card } from '../ui/card';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
@@ -70,7 +69,16 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   const fetchCategories = async () => {
     try {
       const response = await categoryAPI.getCategories();
-      setCategories(response.data.data.categories || []);
+      if (response.data.success && response.data.data) {
+        const categoriesData = response.data.data.categories || [];
+        // Convert Date objects to strings for local state compatibility
+        const categories = categoriesData.map(cat => ({
+          ...cat,
+          createdAt: cat.createdAt instanceof Date ? cat.createdAt.toISOString() : cat.createdAt,
+          updatedAt: cat.updatedAt instanceof Date ? cat.updatedAt.toISOString() : cat.updatedAt,
+        }));
+        setCategories(categories);
+      }
     } catch (err) {
       console.error('Error fetching categories:', err);
     }
@@ -125,14 +133,16 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       setSaving(true);
 
       const submitData = {
-        ...formData,
-        parentId: formData.parentId === 'none' ? null : formData.parentId || null,
-        image: formData.image || null,
+        name: formData.name,
+        description: formData.description,
+        parentId: formData.parentId === 'none' ? undefined : formData.parentId || undefined,
+        image: formData.image || undefined,
+        sortOrder: formData.sortOrder,
       };
 
       if (category) {
         // Update existing category
-        await categoryAPI.updateCategory(category.id, submitData);
+        await categoryAPI.updateCategory(category.id, { id: category.id, ...submitData });
       } else {
         // Create new category
         await categoryAPI.createCategory(submitData);
@@ -160,64 +170,74 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       return false;
     };
 
-    return categories.filter(cat => !isDescendant(cat, category.id));
+    return categories.filter((cat: Category) => !isDescendant(cat, category.id));
   };
 
-  const parentOptions = getParentOptions().filter(cat => cat.id !== category?.id);
+  const parentOptions = getParentOptions().filter((cat: Category) => cat.id !== category?.id);
 
   return (
-    <Card className="p-6">
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900">
           {category ? 'Edit Category' : 'Create Category'}
         </h2>
         {parentCategory && (
-          <p className="text-sm text-gray-600 mt-1">
-            Creating subcategory under: {parentCategory.name}
-          </p>
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-md bg-blue-50 border border-blue-200">
+            <p className="text-sm text-blue-700">
+              Creating subcategory under: <span className="font-medium">{parentCategory.name}</span>
+            </p>
+          </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {errors.general && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3">
-            <p className="text-red-600 text-sm">{errors.general}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-700 text-sm font-medium">{errors.general}</p>
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Category Name *</label>
+          <label className="block text-sm font-medium text-gray-900 mb-2">
+            Category Name <span className="text-red-500">*</span>
+          </label>
           <Input
             type="text"
             value={formData.name}
             onChange={e => handleInputChange('name', e.target.value)}
             placeholder="Enter category name"
-            className={errors.name ? 'border-red-300' : ''}
+            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+            }`}
           />
-          {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
+          {errors.name && <p className="text-red-600 text-sm mt-1.5">{errors.name}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <label className="block text-sm font-medium text-gray-900 mb-2">Description</label>
           <textarea
             value={formData.description}
             onChange={e => handleInputChange('description', e.target.value)}
             placeholder="Enter category description (optional)"
             rows={3}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-              errors.description ? 'border-red-300' : 'border-gray-300'
+            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+              errors.description
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300 hover:border-gray-400'
             }`}
           />
-          {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
+          {errors.description && (
+            <p className="text-red-600 text-sm mt-1.5">{errors.description}</p>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Parent Category</label>
+          <label className="block text-sm font-medium text-gray-900 mb-2">Parent Category</label>
           <Select
             value={formData.parentId}
             onValueChange={(value: string) => handleInputChange('parentId', value)}
           >
-            <SelectTrigger className={errors.parentId ? 'border-red-300' : ''}>
+            <SelectTrigger className={`h-11 ${errors.parentId ? 'border-red-300 bg-red-50' : ''}`}>
               <SelectValue placeholder="None (Top Level)" />
             </SelectTrigger>
             <SelectContent>
@@ -229,46 +249,62 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
               ))}
             </SelectContent>
           </Select>
-          {errors.parentId && <p className="text-red-600 text-sm mt-1">{errors.parentId}</p>}
+          {errors.parentId && <p className="text-red-600 text-sm mt-1.5">{errors.parentId}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+          <label className="block text-sm font-medium text-gray-900 mb-2">Image URL</label>
           <Input
             type="url"
             value={formData.image}
             onChange={e => handleInputChange('image', e.target.value)}
             placeholder="Enter image URL (optional)"
-            className={errors.image ? 'border-red-300' : ''}
+            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors.image ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+            }`}
           />
-          {errors.image && <p className="text-red-600 text-sm mt-1">{errors.image}</p>}
+          {errors.image && <p className="text-red-600 text-sm mt-1.5">{errors.image}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Sort Order</label>
+          <label className="block text-sm font-medium text-gray-900 mb-2">Sort Order</label>
           <Input
             type="number"
             value={formData.sortOrder}
             onChange={e => handleInputChange('sortOrder', parseInt(e.target.value) || 0)}
             min="0"
-            className={errors.sortOrder ? 'border-red-300' : ''}
+            className={`w-full px-4 py-2.5 border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              errors.sortOrder
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
           />
-          {errors.sortOrder && <p className="text-red-600 text-sm mt-1">{errors.sortOrder}</p>}
-          <p className="text-xs text-gray-500 mt-1">
+          {errors.sortOrder && <p className="text-red-600 text-sm mt-1.5">{errors.sortOrder}</p>}
+          <p className="text-xs text-gray-500 mt-1.5">
             Lower numbers appear first. Use 0 for default ordering.
           </p>
         </div>
 
-        <div className="flex justify-end space-x-3 pt-6 border-t">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={saving}
+            className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            type="submit"
+            disabled={saving}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {saving ? 'Saving...' : category ? 'Update Category' : 'Create Category'}
           </Button>
         </div>
       </form>
-    </Card>
+    </div>
   );
 };
 

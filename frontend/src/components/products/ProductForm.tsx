@@ -1,3 +1,4 @@
+import { ProductStatus } from '@electrostock/types';
 import { AlertTriangle, CheckCircle, Loader2, Package, Scan, Wand2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { categoryAPI, productAPI } from '../../services/api';
@@ -26,7 +27,7 @@ interface ProductFormData {
   costPrice: number;
   sellingPrice: number;
   lowStockThreshold: number;
-  status: 'active' | 'inactive' | 'discontinued';
+  status: ProductStatus;
 }
 
 interface ProductFormProps {
@@ -55,7 +56,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     costPrice: 0,
     sellingPrice: 0,
     lowStockThreshold: 10,
-    status: 'active',
+    status: ProductStatus.ACTIVE,
     ...initialData,
   });
 
@@ -78,7 +79,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     try {
       setLoadingCategories(true);
       const response = await categoryAPI.getCategories();
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         // The API returns { data: { categories, pagination } }
         const categoriesData = response.data.data.categories;
         if (Array.isArray(categoriesData)) {
@@ -132,13 +133,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
     try {
       setGeneratingSku(true);
       const response = await productAPI.generateSku({
-        name: formData.name,
+        productName: formData.name,
         categoryId: formData.categoryId,
         brand: formData.brand || undefined,
-        model: formData.model || undefined,
       });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         const newSku = response.data.data.sku;
         setFormData(prev => ({ ...prev, sku: newSku }));
         setSkuGenerated(true);
@@ -164,12 +164,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
       setValidatingBarcode(true);
       const response = await productAPI.validateBarcode({ barcode });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         setBarcodeValid(response.data.data.isValid);
         if (!response.data.data.isValid) {
           setErrors(prev => ({
             ...prev,
-            barcode: response.data.data.message || 'Invalid barcode format',
+            barcode: response.data.data?.message || 'Invalid barcode format',
           }));
         } else {
           setErrors(prev => ({ ...prev, barcode: undefined }));
@@ -373,9 +373,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="discontinued">Discontinued</SelectItem>
+                  <SelectItem value={ProductStatus.ACTIVE}>Active</SelectItem>
+                  <SelectItem value={ProductStatus.INACTIVE}>Inactive</SelectItem>
+                  <SelectItem value={ProductStatus.DISCONTINUED}>Discontinued</SelectItem>
                 </SelectContent>
               </Select>
             </div>

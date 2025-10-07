@@ -7,7 +7,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/auth/LoginPage';
 import CategoriesPage from './pages/categories';
-import DashboardPage from './pages/DashboardPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
 import InventoryDashboard from './pages/inventory/InventoryDashboard';
 import InventoryMovementsPage from './pages/inventory/InventoryMovementsPage';
 import StockAdjustmentPage from './pages/inventory/StockAdjustmentPage';
@@ -113,7 +113,12 @@ function AppContent(): JSX.Element {
 function App(): JSX.Element {
   return (
     <Provider store={store}>
-      <Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AppContent />
       </Router>
     </Provider>
